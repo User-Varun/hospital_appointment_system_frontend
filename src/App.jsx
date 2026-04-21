@@ -1,229 +1,233 @@
-import { useState } from 'react'
-import './App.css'
+import { useState } from "react";
+import "./App.css";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1'
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 function tryParseJson(value, fallback) {
   try {
-    return value ? JSON.parse(value) : fallback
+    return value ? JSON.parse(value) : fallback;
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '')
-  const [authView, setAuthView] = useState('login')
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [authView, setAuthView] = useState("login");
   const [currentUser, setCurrentUser] = useState(
-    tryParseJson(localStorage.getItem('currentUser'), null),
-  )
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+    tryParseJson(localStorage.getItem("currentUser"), null),
+  );
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [registerForm, setRegisterForm] = useState({
-    name: '',
-    username: '',
-    password: '',
-    role: 'patient',
-    specialty: '',
-  })
+    name: "",
+    username: "",
+    password: "",
+    role: "patient",
+    specialty: "",
+  });
   const [authForm, setAuthForm] = useState({
-    username: '',
-    password: '',
-  })
+    username: "",
+    password: "",
+  });
   const [bookForm, setBookForm] = useState({
-    patientId: '',
-    doctorId: '',
-    appointmentDate: '',
-    reason: '',
-  })
+    patientId: "",
+    doctorId: "",
+    appointmentDate: "",
+    reason: "",
+  });
   const [appointmentFilters, setAppointmentFilters] = useState({
-    patientId: '',
-    doctorId: '',
-    status: '',
-  })
+    patientId: "",
+    doctorId: "",
+    status: "",
+  });
 
-  const [users, setUsers] = useState([])
-  const [patients, setPatients] = useState([])
-  const [doctors, setDoctors] = useState([])
-  const [appointments, setAppointments] = useState([])
+  const [users, setUsers] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
 
-  async function apiRequest(path, { method = 'GET', body, auth = false } = {}) {
-    const headers = { 'Content-Type': 'application/json' }
+  async function apiRequest(path, { method = "GET", body, auth = false } = {}) {
+    const headers = { "Content-Type": "application/json" };
     if (auth) {
       if (!token) {
-        throw new Error('Please authenticate first.')
+        throw new Error("Please authenticate first.");
       }
-      headers.Authorization = `Bearer ${token}`
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-    })
+    });
 
-    const payload = await response.json().catch(() => ({}))
+    const payload = await response.json().catch(() => ({}));
     if (!response.ok || payload.success === false) {
       const error = new Error(
         payload.message || `Request failed: ${response.status}`,
-      )
-      error.statusCode = response.status
-      throw error
+      );
+      error.statusCode = response.status;
+      throw error;
     }
 
-    return payload
+    return payload;
   }
 
   async function apiRequestWithFallback(paths, options) {
-    let lastError = null
+    let lastError = null;
 
     for (let index = 0; index < paths.length; index += 1) {
       try {
-        return await apiRequest(paths[index], options)
+        return await apiRequest(paths[index], options);
       } catch (error) {
-        lastError = error
-        const hasNext = index < paths.length - 1
-        const shouldTryNext = error.statusCode === 404 || error.statusCode === 405
+        lastError = error;
+        const hasNext = index < paths.length - 1;
+        const shouldTryNext =
+          error.statusCode === 404 || error.statusCode === 405;
 
         if (!hasNext || !shouldTryNext) {
-          throw error
+          throw error;
         }
       }
     }
 
-    throw lastError || new Error('Request failed')
+    throw lastError || new Error("Request failed");
   }
 
   async function runAction(action, successMessage) {
-    setLoading(true)
+    setLoading(true);
     try {
-      await action()
-      setMessage(successMessage)
+      await action();
+      setMessage(successMessage);
     } catch (error) {
-      setMessage(error.message || 'Something went wrong')
+      setMessage(error.message || "Something went wrong");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function fetchPatients() {
-    const payload = await apiRequest('/users/patients', { auth: true })
-    setPatients(payload.data || [])
+    const payload = await apiRequest("/users/patients", { auth: true });
+    setPatients(payload.data || []);
   }
 
   async function fetchDoctors() {
-    const payload = await apiRequest('/users/doctors', { auth: true })
-    setDoctors(payload.data || [])
+    const payload = await apiRequest("/users/doctors", { auth: true });
+    setDoctors(payload.data || []);
   }
 
   async function fetchUsers() {
-    const payload = await apiRequest('/users', { auth: true })
-    setUsers(payload.data || [])
+    const payload = await apiRequest("/users", { auth: true });
+    setUsers(payload.data || []);
   }
 
   async function fetchAppointments(filters = appointmentFilters) {
-    const params = new URLSearchParams()
-    if (filters.patientId) params.append('patientId', filters.patientId)
-    if (filters.doctorId) params.append('doctorId', filters.doctorId)
-    if (filters.status) params.append('status', filters.status)
+    const params = new URLSearchParams();
+    if (filters.patientId) params.append("patientId", filters.patientId);
+    if (filters.doctorId) params.append("doctorId", filters.doctorId);
+    if (filters.status) params.append("status", filters.status);
 
-    const query = params.toString()
-    const payload = await apiRequest(`/appointments${query ? `?${query}` : ''}`, {
-      auth: true,
-    })
-    setAppointments(payload.data || [])
+    const query = params.toString();
+    const payload = await apiRequest(
+      `/appointments${query ? `?${query}` : ""}`,
+      {
+        auth: true,
+      },
+    );
+    setAppointments(payload.data || []);
   }
 
   function handleRegister(event) {
-    event.preventDefault()
+    event.preventDefault();
     runAction(async () => {
       const body = {
         ...registerForm,
         specialty:
-          registerForm.role === 'doctor' ? registerForm.specialty.trim() : '',
-      }
+          registerForm.role === "doctor" ? registerForm.specialty.trim() : "",
+      };
       const payload = await apiRequestWithFallback(
-        ['/users/signup', '/users/register'],
+        ["/users/signup", "/users/register"],
         {
-          method: 'POST',
+          method: "POST",
           body,
         },
-      )
+      );
       if (payload.token && payload.data) {
-        setToken(payload.token)
-        setCurrentUser(payload.data)
-        localStorage.setItem('token', payload.token)
-        localStorage.setItem('currentUser', JSON.stringify(payload.data))
+        setToken(payload.token);
+        setCurrentUser(payload.data);
+        localStorage.setItem("token", payload.token);
+        localStorage.setItem("currentUser", JSON.stringify(payload.data));
       }
       setRegisterForm({
-        name: '',
-        username: '',
-        password: '',
-        role: 'patient',
-        specialty: '',
-      })
-      await Promise.all([fetchPatients(), fetchDoctors(), fetchAppointments()])
-    }, 'Signup successful.')
+        name: "",
+        username: "",
+        password: "",
+        role: "patient",
+        specialty: "",
+      });
+      await Promise.all([fetchPatients(), fetchDoctors(), fetchAppointments()]);
+    }, "Signup successful.");
   }
 
   function handleAuthenticate(event) {
-    event.preventDefault()
+    event.preventDefault();
     runAction(async () => {
       const payload = await apiRequestWithFallback(
-        ['/users/login', '/users/authenticate'],
+        ["/users/login", "/users/authenticate"],
         {
-          method: 'POST',
+          method: "POST",
           body: authForm,
         },
-      )
-      setToken(payload.token)
-      setCurrentUser(payload.data)
-      localStorage.setItem('token', payload.token)
-      localStorage.setItem('currentUser', JSON.stringify(payload.data))
-      await Promise.all([fetchPatients(), fetchDoctors(), fetchAppointments()])
-    }, 'Login successful.')
+      );
+      setToken(payload.token);
+      setCurrentUser(payload.data);
+      localStorage.setItem("token", payload.token);
+      localStorage.setItem("currentUser", JSON.stringify(payload.data));
+      await Promise.all([fetchPatients(), fetchDoctors(), fetchAppointments()]);
+    }, "Login successful.");
   }
 
   function handleBookAppointment(event) {
-    event.preventDefault()
+    event.preventDefault();
     runAction(async () => {
       const body = {
         ...bookForm,
         appointmentDate: new Date(bookForm.appointmentDate).toISOString(),
-      }
-      await apiRequest('/appointments', { method: 'POST', body, auth: true })
-      await fetchAppointments()
+      };
+      await apiRequest("/appointments", { method: "POST", body, auth: true });
+      await fetchAppointments();
       setBookForm({
-        patientId: '',
-        doctorId: '',
-        appointmentDate: '',
-        reason: '',
-      })
-    }, 'Appointment booked.')
+        patientId: "",
+        doctorId: "",
+        appointmentDate: "",
+        reason: "",
+      });
+    }, "Appointment booked.");
   }
 
   function handleCancelAppointment(appointmentId) {
     runAction(async () => {
       await apiRequest(`/appointments/${appointmentId}/cancel`, {
-        method: 'PATCH',
+        method: "PATCH",
         auth: true,
-      })
-      await fetchAppointments()
-    }, 'Appointment cancelled.')
+      });
+      await fetchAppointments();
+    }, "Appointment cancelled.");
   }
 
   function handleLogout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
-    setToken('')
-    setCurrentUser(null)
-    setUsers([])
-    setPatients([])
-    setDoctors([])
-    setAppointments([])
-    setMessage('Logged out.')
+    localStorage.removeItem("token");
+    localStorage.removeItem("currentUser");
+    setToken("");
+    setCurrentUser(null);
+    setUsers([]);
+    setPatients([]);
+    setDoctors([]);
+    setAppointments([]);
+    setMessage("Logged out.");
   }
 
   if (!token) {
@@ -231,26 +235,26 @@ function App() {
       <main className="auth-shell">
         <section className="card auth-card">
           <p className="eyebrow">Hospital Appointment System</p>
-          <h1>{authView === 'login' ? 'Login' : 'Sign Up'}</h1>
+          <h1>{authView === "login" ? "Login" : "Sign Up"}</h1>
 
           <div className="button-row auth-toggle">
             <button
               type="button"
-              className={authView === 'login' ? '' : 'secondary'}
-              onClick={() => setAuthView('login')}
+              className={authView === "login" ? "" : "secondary"}
+              onClick={() => setAuthView("login")}
             >
               Login
             </button>
             <button
               type="button"
-              className={authView === 'signup' ? '' : 'secondary'}
-              onClick={() => setAuthView('signup')}
+              className={authView === "signup" ? "" : "secondary"}
+              onClick={() => setAuthView("signup")}
             >
               Sign Up
             </button>
           </div>
 
-          {authView === 'signup' ? (
+          {authView === "signup" ? (
             <form onSubmit={handleRegister} className="form auth-form">
               <input
                 required
@@ -264,7 +268,10 @@ function App() {
                 required
                 value={registerForm.username}
                 onChange={(event) =>
-                  setRegisterForm({ ...registerForm, username: event.target.value })
+                  setRegisterForm({
+                    ...registerForm,
+                    username: event.target.value,
+                  })
                 }
                 placeholder="Username"
               />
@@ -273,7 +280,10 @@ function App() {
                 type="password"
                 value={registerForm.password}
                 onChange={(event) =>
-                  setRegisterForm({ ...registerForm, password: event.target.value })
+                  setRegisterForm({
+                    ...registerForm,
+                    password: event.target.value,
+                  })
                 }
                 placeholder="Password"
               />
@@ -289,12 +299,15 @@ function App() {
               <input
                 value={registerForm.specialty}
                 onChange={(event) =>
-                  setRegisterForm({ ...registerForm, specialty: event.target.value })
+                  setRegisterForm({
+                    ...registerForm,
+                    specialty: event.target.value,
+                  })
                 }
                 placeholder="Specialty (doctor only)"
               />
               <button type="submit" disabled={loading}>
-                {loading ? 'Please wait...' : 'Sign Up'}
+                {loading ? "Please wait..." : "Sign Up"}
               </button>
             </form>
           ) : (
@@ -317,17 +330,17 @@ function App() {
                 placeholder="Password"
               />
               <button type="submit" disabled={loading}>
-                {loading ? 'Please wait...' : 'Login'}
+                {loading ? "Please wait..." : "Login"}
               </button>
             </form>
           )}
 
           {(loading || message) && (
-            <p className="auth-message">{loading ? 'Working...' : message}</p>
+            <p className="auth-message">{loading ? "Working..." : message}</p>
           )}
         </section>
       </main>
-    )
+    );
   }
 
   return (
@@ -341,13 +354,13 @@ function App() {
 
       <section className="status-row">
         <p>
-          Session:{' '}
+          Session:{" "}
           {currentUser
             ? `${currentUser.name} (${currentUser.role})`
-            : 'Not authenticated'}
+            : "Not authenticated"}
         </p>
-        <p>Token: {token ? 'Available' : 'Missing'}</p>
-        {(loading || message) && <p>{loading ? 'Working...' : message}</p>}
+        <p>Token: {token ? "Available" : "Missing"}</p>
+        {(loading || message) && <p>{loading ? "Working..." : message}</p>}
         {token && (
           <button type="button" className="secondary" onClick={handleLogout}>
             Logout
@@ -361,19 +374,19 @@ function App() {
           <div className="button-row">
             <button
               type="button"
-              onClick={() => runAction(fetchUsers, 'All users loaded.')}
+              onClick={() => runAction(fetchUsers, "All users loaded.")}
             >
               Get All Users
             </button>
             <button
               type="button"
-              onClick={() => runAction(fetchPatients, 'Patients loaded.')}
+              onClick={() => runAction(fetchPatients, "Patients loaded.")}
             >
               Get Patients
             </button>
             <button
               type="button"
-              onClick={() => runAction(fetchDoctors, 'Doctors loaded.')}
+              onClick={() => runAction(fetchDoctors, "Doctors loaded.")}
             >
               Get Doctors
             </button>
@@ -408,7 +421,7 @@ function App() {
               {doctors.map((doctor) => (
                 <option key={doctor._id} value={doctor._id}>
                   {doctor.name}
-                  {doctor.specialty ? ` - ${doctor.specialty}` : ''}
+                  {doctor.specialty ? ` - ${doctor.specialty}` : ""}
                 </option>
               ))}
             </select>
@@ -417,7 +430,10 @@ function App() {
               type="datetime-local"
               value={bookForm.appointmentDate}
               onChange={(event) =>
-                setBookForm({ ...bookForm, appointmentDate: event.target.value })
+                setBookForm({
+                  ...bookForm,
+                  appointmentDate: event.target.value,
+                })
               }
             />
             <textarea
@@ -489,7 +505,7 @@ function App() {
             onClick={() =>
               runAction(
                 () => fetchAppointments(appointmentFilters),
-                'Appointments loaded.',
+                "Appointments loaded.",
               )
             }
           >
@@ -517,26 +533,28 @@ function App() {
               ) : (
                 appointments.map((appointment) => (
                   <tr key={appointment._id}>
-                    <td>{new Date(appointment.appointmentDate).toLocaleString()}</td>
-                    <td>{appointment.patient?.name || 'Unknown'}</td>
-                    <td>{appointment.doctor?.name || 'Unknown'}</td>
+                    <td>
+                      {new Date(appointment.appointmentDate).toLocaleString()}
+                    </td>
+                    <td>{appointment.patient?.name || "Unknown"}</td>
+                    <td>{appointment.doctor?.name || "Unknown"}</td>
                     <td>
                       <span
                         className={`status-pill ${
-                          appointment.status === 'cancelled'
-                            ? 'status-cancelled'
-                            : 'status-booked'
+                          appointment.status === "cancelled"
+                            ? "status-cancelled"
+                            : "status-booked"
                         }`}
                       >
                         {appointment.status}
                       </span>
                     </td>
-                    <td>{appointment.reason || '-'}</td>
+                    <td>{appointment.reason || "-"}</td>
                     <td>
                       <button
                         type="button"
                         className="secondary"
-                        disabled={appointment.status === 'cancelled'}
+                        disabled={appointment.status === "cancelled"}
                         onClick={() => handleCancelAppointment(appointment._id)}
                       >
                         Cancel
@@ -575,7 +593,7 @@ function App() {
               doctors.map((doctor) => (
                 <li key={doctor._id}>
                   {doctor.name}
-                  {doctor.specialty ? ` (${doctor.specialty})` : ''}
+                  {doctor.specialty ? ` (${doctor.specialty})` : ""}
                 </li>
               ))
             )}
@@ -598,7 +616,7 @@ function App() {
         </article>
       </section>
     </main>
-  )
+  );
 }
 
-export default App
+export default App;

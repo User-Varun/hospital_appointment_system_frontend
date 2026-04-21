@@ -143,7 +143,9 @@ button {
   border: 1px solid #1d4f78;
   background: #1d4f78;
   color: #ffffff;
-  transition: transform 0.15s ease, filter 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    filter 0.2s ease;
 }
 
 button:hover:not(:disabled) {
