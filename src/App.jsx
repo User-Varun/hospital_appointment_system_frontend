@@ -122,7 +122,8 @@ function App() {
 
   async function fetchAppointments(filters = appointmentFilters) {
     const params = new URLSearchParams();
-    if (filters.doctorId && isPatient) params.append("doctorId", filters.doctorId);
+    if (filters.doctorId && isPatient)
+      params.append("doctorId", filters.doctorId);
     if (filters.status) params.append("status", filters.status);
 
     const query = params.toString();
