@@ -14,10 +14,11 @@ function tryParseJson(value, fallback) {
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '')
+  const [authView, setAuthView] = useState('login')
   const [currentUser, setCurrentUser] = useState(
     tryParseJson(localStorage.getItem('currentUser'), null),
   )
-  const [message, setMessage] = useState('Ready')
+  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   const [registerForm, setRegisterForm] = useState({
@@ -225,6 +226,110 @@ function App() {
     setMessage('Logged out.')
   }
 
+  if (!token) {
+    return (
+      <main className="auth-shell">
+        <section className="card auth-card">
+          <p className="eyebrow">Hospital Appointment System</p>
+          <h1>{authView === 'login' ? 'Login' : 'Sign Up'}</h1>
+
+          <div className="button-row auth-toggle">
+            <button
+              type="button"
+              className={authView === 'login' ? '' : 'secondary'}
+              onClick={() => setAuthView('login')}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={authView === 'signup' ? '' : 'secondary'}
+              onClick={() => setAuthView('signup')}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {authView === 'signup' ? (
+            <form onSubmit={handleRegister} className="form auth-form">
+              <input
+                required
+                value={registerForm.name}
+                onChange={(event) =>
+                  setRegisterForm({ ...registerForm, name: event.target.value })
+                }
+                placeholder="Name"
+              />
+              <input
+                required
+                value={registerForm.username}
+                onChange={(event) =>
+                  setRegisterForm({ ...registerForm, username: event.target.value })
+                }
+                placeholder="Username"
+              />
+              <input
+                required
+                type="password"
+                value={registerForm.password}
+                onChange={(event) =>
+                  setRegisterForm({ ...registerForm, password: event.target.value })
+                }
+                placeholder="Password"
+              />
+              <select
+                value={registerForm.role}
+                onChange={(event) =>
+                  setRegisterForm({ ...registerForm, role: event.target.value })
+                }
+              >
+                <option value="patient">Patient</option>
+                <option value="doctor">Doctor</option>
+              </select>
+              <input
+                value={registerForm.specialty}
+                onChange={(event) =>
+                  setRegisterForm({ ...registerForm, specialty: event.target.value })
+                }
+                placeholder="Specialty (doctor only)"
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? 'Please wait...' : 'Sign Up'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAuthenticate} className="form auth-form">
+              <input
+                required
+                value={authForm.username}
+                onChange={(event) =>
+                  setAuthForm({ ...authForm, username: event.target.value })
+                }
+                placeholder="Username"
+              />
+              <input
+                required
+                type="password"
+                value={authForm.password}
+                onChange={(event) =>
+                  setAuthForm({ ...authForm, password: event.target.value })
+                }
+                placeholder="Password"
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? 'Please wait...' : 'Login'}
+              </button>
+            </form>
+          )}
+
+          {(loading || message) && (
+            <p className="auth-message">{loading ? 'Working...' : message}</p>
+          )}
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell">
       <header className="top-bar">
@@ -242,7 +347,7 @@ function App() {
             : 'Not authenticated'}
         </p>
         <p>Token: {token ? 'Available' : 'Missing'}</p>
-        <p>{loading ? 'Working...' : message}</p>
+        {(loading || message) && <p>{loading ? 'Working...' : message}</p>}
         {token && (
           <button type="button" className="secondary" onClick={handleLogout}>
             Logout
@@ -251,78 +356,6 @@ function App() {
       </section>
 
       <section className="grid">
-        <article className="card">
-          <h2>Sign Up Patient / Doctor</h2>
-          <form onSubmit={handleRegister} className="form">
-            <input
-              required
-              value={registerForm.name}
-              onChange={(event) =>
-                setRegisterForm({ ...registerForm, name: event.target.value })
-              }
-              placeholder="Name"
-            />
-            <input
-              required
-              value={registerForm.username}
-              onChange={(event) =>
-                setRegisterForm({ ...registerForm, username: event.target.value })
-              }
-              placeholder="Username"
-            />
-            <input
-              required
-              type="password"
-              value={registerForm.password}
-              onChange={(event) =>
-                setRegisterForm({ ...registerForm, password: event.target.value })
-              }
-              placeholder="Password"
-            />
-            <select
-              value={registerForm.role}
-              onChange={(event) =>
-                setRegisterForm({ ...registerForm, role: event.target.value })
-              }
-            >
-              <option value="patient">Patient</option>
-              <option value="doctor">Doctor</option>
-            </select>
-            <input
-              value={registerForm.specialty}
-              onChange={(event) =>
-                setRegisterForm({ ...registerForm, specialty: event.target.value })
-              }
-              placeholder="Specialty (doctor only)"
-            />
-            <button type="submit">Sign Up</button>
-          </form>
-        </article>
-
-        <article className="card">
-          <h2>Login</h2>
-          <form onSubmit={handleAuthenticate} className="form">
-            <input
-              required
-              value={authForm.username}
-              onChange={(event) =>
-                setAuthForm({ ...authForm, username: event.target.value })
-              }
-              placeholder="Username"
-            />
-            <input
-              required
-              type="password"
-              value={authForm.password}
-              onChange={(event) =>
-                setAuthForm({ ...authForm, password: event.target.value })
-              }
-              placeholder="Password"
-            />
-            <button type="submit">Login</button>
-          </form>
-        </article>
-
         <article className="card">
           <h2>Get Users</h2>
           <div className="button-row">
